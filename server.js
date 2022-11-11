@@ -1,4 +1,5 @@
 import express from "express";
+import cluster from "cluster";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import MongoStore from "connect-mongo";
@@ -23,11 +24,8 @@ const advancedOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 
 import { User } from "./models/user.js";
 
-const argv = minimist(process.argv.slice(2), { alias: { p: "port" } });
-
-const MONGO_DB_URI = process.env.MONGO_URI;
-
 const app = express();
+const MONGO_DB_URI = process.env.MONGO_URI;
 
 app.use(compression());
 app.use(cookieParser());
@@ -177,7 +175,7 @@ app.post(
 
 app.get("/failregister", (req, res) => {
   loggerError.error(`metodo ${req.method} Ruta  ${req.originalUrl}`);
-    res.render("register-error", {});
+  res.render("register-error", {});
 });
 
 app.get("/logout", (req, res, next) => {
@@ -217,8 +215,6 @@ log4js.configure({
     todos: { appenders: ["miLoggerConsole", "miLoggerFile2"], level: "info" },
   },
 });
-
-
 
 /*---------------- RUTAS NUMEROS RANDOM E INFO -------------- */
 
@@ -278,32 +274,69 @@ app.get("*", (req, res) => {
 
 // -------------- MODO FORK -------------------
 //pm2 start server.js --name="ServerX" --watch -- PORT
-//pm2 start server.js --name="Server1" --watch -- 8082
-//pm2 start server.js --name="Server2" --watch -- 8083
-//pm2 start server.js --name="Server3" --watch -- 8084
-//pm2 start server.js --name="Server4" --watch -- 8085
+//pm2 start server.js --name="Server1" --watch -- --port 8082
+//pm2 start server.js --name="Server2" --watch -- --port 8083
+//pm2 start server.js --name="Server3" --watch -- --port 8084
+//pm2 start server.js --name="Server4" --watch -- --port 8085
 
 // Tuve un problema que no pude resolver que cuando levanto con fork o cluster los servidores quedan en errored, y no pude encontrar solucion para ese error
 
 // -------------- MODO CLUSTER -------------------
 //pm2 start server.js --name="ServerX" --watch -i max -- PORT
-//pm2 start server.js --name="Server1" --watch -i max -- 8080
+//pm2 start server.js --name="Server1" --watch -i max -- --port 8080
 
 //pm2 list
 //pm2 delete id
 
 //----------------------------------------------------------------
-const PORT = argv.port || 8080;
-const srv = app.listen(PORT, async () => {
-  console.log(`Servidor http escuchando en el puerto ${srv.address().port}`);
-  try {
-    const mongo = await mongoose.connect(MONGO_DB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("Connected DB");
-  } catch (error) {
-    console.log(`Error en conexión de Base de datos: ${error}`);
-  }
+
+const argv = minimist(process.argv.slice(2), {
+  alias: { p: "port", c: "cluster" },
 });
-srv.on("error", (error) => console.log(`Error en servidor ${error}`));
+
+const PORT = argv.p || 8080;
+const CLUSTER = argv.c;
+
+//    --cluster
+
+if (CLUSTER) {
+  if (cluster.isPrimary) {
+    for (let i = 0; i < CPU_CORES; i++) {
+      cluster.fork();
+    }
+    cluster.on("exit", (worker) => {
+      console.log(`Finalizó el worker: ${process.pid}`);
+      cluster.fork();
+    });
+  } else {
+    const srv = app.listen(PORT, async () => {
+      console.log(
+        `Servidor http escuchando en el puerto ${srv.address().port}`
+      );
+      try {
+        const mongo = await mongoose.connect(MONGO_DB_URI, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+        });
+        console.log("Connected DB");
+      } catch (error) {
+        console.log(`Error en conexión de Base de datos: ${error}`);
+      }
+    });
+    srv.on("error", (error) => console.log(`Error en servidor ${error}`));
+  }
+} else {
+  const srv = app.listen(PORT, async () => {
+    console.log(`Servidor http escuchando en el puerto ${srv.address().port}`);
+    try {
+      const mongo = await mongoose.connect(MONGO_DB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log("Connected DB");
+    } catch (error) {
+      console.log(`Error en conexión de Base de datos: ${error}`);
+    }
+  });
+  srv.on("error", (error) => console.log(`Error en servidor ${error}`));
+}
