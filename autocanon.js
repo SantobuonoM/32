@@ -24,6 +24,6 @@ console.log("Running all benchmarks in parallel ...");
 run("http://localhost:8080/info");
 
 //  ----------modo consol-------------
-//  autocannon -d 20 -c 500 "http://localhost:8080/auth-bloq?username=matias&password=42501719"
+//  autocannon -d 20 -c 500 "http://localhost:8080/"
 
 

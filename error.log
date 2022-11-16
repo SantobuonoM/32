@@ -10,3 +10,6 @@
 [2022-11-11T15:16:09.472] [INFO] todos - metodo GET Ruta  /
 [2022-11-11T15:16:56.779] [INFO] todos - metodo GET Ruta  /
 [2022-11-11T15:21:02.130] [INFO] todos - metodo GET Ruta  /
+[2022-11-16T11:58:20.909] [INFO] todos - metodo GET Ruta  /
+[2022-11-16T11:58:21.142] [WARN] todos - metodo GET Ruta inexistente /favicon.ico
+[2022-11-16T16:30:08.061] [WARN] todos - metodo GET Ruta inexistente /favicon.ico
