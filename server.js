@@ -294,7 +294,7 @@ const argv = minimist(process.argv.slice(2), {
   alias: { p: "port", c: "cluster" },
 });
 
-const PORT = argv.p || 8080;
+const PORT = argv.p || process.env.PORT;
 const CLUSTER = argv.c;
 
 //    --cluster
