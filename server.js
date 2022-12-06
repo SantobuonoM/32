@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import cluster from "cluster";
 import cookieParser from "cookie-parser";
 import session from "express-session";
@@ -6,24 +6,15 @@ import MongoStore from "connect-mongo";
 import exphbs from "express-handlebars";
 import mongoose from "mongoose";
 import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
-dotenv.config();
-import os from "os";
-import fileURLToPath from "url";
-import dirname from "path";
-import log4js from "log4js";
 import compression from "compression";
-
-import { fork } from "child_process";
-import minimist from "minimist";
+import routerApi from "./router/routerApi.js";
 import passport from "passport";
 import bCrypt from "bcrypt";
+import minimist from "minimist";
 import { Strategy as LocalStrategy } from "passport-local";
-
-const numCPUs = os.cpus().length;
-const advancedOptions = { useNewUrlParser: true, useUnifiedTopology: true };
-
 import { User } from "./models/user.js";
 
+dotenv.config();
 const app = express();
 const MONGO_DB_URI = process.env.MONGO_URI;
 
@@ -103,6 +94,7 @@ passport.use(
           }
           if (user) {
             console.log("User already exists");
+            /* ---------------------- Rutas ----------------------*/
             return cb(null, false);
           } else {
             let newUser = new User();
@@ -123,11 +115,6 @@ passport.use(
     }
   )
 );
-const loggerWarn = log4js.getLogger("archivo");
-
-const loggerError = log4js.getLogger("archivo2");
-
-const loggerTodos = log4js.getLogger("todos");
 
 let createHash = function (password) {
   return bCrypt.hashSync(password, bCrypt.genSaltSync(10), null);
@@ -141,136 +128,8 @@ passport.deserializeUser((id, done) => {
     done(err, user);
   });
 });
-
-app.get("/ses", (req, res) => {
-  console.log(req.session);
-  res.send("anda a mirar la consola");
-});
-
-app.post(
-  "/login",
-  passport.authenticate("login", { failureRedirect: "/faillogin" }),
-  (req, res) => {
-    res.redirect("/");
-  }
-);
-
-app.get("/faillogin", (req, res) => {
-  res.render("login-error", {});
-});
-
-app.get("/register", (req, res) => {
-  loggerWarn.warn(`metodo ${req.method} Ruta  ${req.originalUrl}`);
-  res.render("register");
-});
-
-app.post(
-  "/register",
-  passport.authenticate("register", { failureRedirect: "/failregister" }),
-
-  (req, res) => {
-    res.redirect("/");
-  }
-);
-
-app.get("/failregister", (req, res) => {
-  loggerError.error(`metodo ${req.method} Ruta  ${req.originalUrl}`);
-  res.render("register-error", {});
-});
-
-app.get("/logout", (req, res, next) => {
-  const { username } = req.user;
-  req.logout({ username }, (err) => {
-    if (err) return next(err);
-  });
-  res.render("logout", { username });
-});
-
-app.get("/login", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.redirect("/");
-  } else {
-    res.render("login");
-  }
-});
-app.get("/", (req, res) => {
-  loggerTodos.info(`metodo ${req.method} Ruta  ${req.originalUrl}`);
-  if (req.isAuthenticated()) {
-    res.render("home", { username: req.user.username });
-  } else {
-    res.redirect("login");
-  }
-});
-/*============================[logs]============================*/
-log4js.configure({
-  appenders: {
-    miLoggerConsole: { type: "console" },
-    miLoggerFile: { type: "file", filename: "warn.log" },
-    miLoggerFile2: { type: "file", filename: "error.log" },
-  },
-  categories: {
-    default: { appenders: ["miLoggerConsole"], level: "trace" },
-    archivo: { appenders: ["miLoggerFile"], level: "warn" },
-    archivo2: { appenders: ["miLoggerFile2"], level: "error" },
-    todos: { appenders: ["miLoggerConsole", "miLoggerFile2"], level: "info" },
-  },
-});
-
-/*---------------- RUTAS NUMEROS RANDOM E INFO -------------- */
-
-app.get("/api/randoms", (req, res) => {
-  const calculo = fork("randomNumbers.js");
-  const num = req.query.cant;
-  if (num) {
-    console.log(num);
-    calculo.on("message", (number) => {
-      if (number == "listo") {
-        calculo.send(num);
-      } else {
-        res.json({ number });
-      }
-    });
-  } else {
-    calculo.on("message", (number) => {
-      if (number == "listo") {
-        calculo.send(100000000);
-      } else {
-        res.json({ number });
-      }
-    });
-  }
-});
-
-app.get("/datos", async (req, res) => {
-  if (req.user) {
-    const datosUsuario = await User.findById(req.user._id).lean();
-    res.render("datos", {
-      datos: datosUsuario,
-    });
-  } else {
-    res.redirect("/login");
-  }
-});
-app.get("/info", (req, res) => {
-  let datos = {
-    argumentos: minimist(process.argv.slice(2)),
-    plataforma: process.platform,
-    versionNode: process.version,
-    memoriaReservada: process.memoryUsage(),
-    ejecutable: process.execPath,
-    pid: process.pid,
-    carpetaProyecto: process.cwd(),
-    procesadores: numCPUs,
-  };
-
-  res.json({ datos });
-});
-
-app.get("*", (req, res) => {
-  loggerTodos.warn(`metodo ${req.method} Ruta inexistente ${req.originalUrl}`);
-  const html = `<div> direccion no valida </div>`;
-  res.status(404).send(html);
-});
+/* ---------------------- Rutas ----------------------*/
+app.use("/", routerApi);
 
 // -------------- MODO FORK -------------------
 //pm2 start server.js --name="ServerX" --watch -- PORT
@@ -297,7 +156,7 @@ const argv = minimist(process.argv.slice(2), {
 const PORT = argv.p || process.env.PORT;
 const CLUSTER = argv.c;
 
-//    --cluster
+//    ----------------------cluster------------------
 
 if (CLUSTER) {
   if (cluster.isPrimary) {
