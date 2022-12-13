@@ -9,11 +9,10 @@ import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-
 import compression from "compression";
 import routerApi from "./router/routerApi.js";
 import passport from "passport";
-import bCrypt from "bcrypt";
 import minimist from "minimist";
 import { Strategy as LocalStrategy } from "passport-local";
 import { User } from "./models/user.js";
-
+import { createHash } from "./utils/bcrypt.js";
 dotenv.config();
 const app = express();
 const MONGO_DB_URI = process.env.MONGO_URI;
@@ -94,7 +93,6 @@ passport.use(
           }
           if (user) {
             console.log("User already exists");
-            /* ---------------------- Rutas ----------------------*/
             return cb(null, false);
           } else {
             let newUser = new User();
@@ -116,9 +114,6 @@ passport.use(
   )
 );
 
-let createHash = function (password) {
-  return bCrypt.hashSync(password, bCrypt.genSaltSync(10), null);
-};
 passport.serializeUser((user, done) => {
   done(null, user._id);
 });
