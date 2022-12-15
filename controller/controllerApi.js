@@ -2,6 +2,11 @@ import log4js from "log4js";
 import { User } from "../models/user.js";
 import minimist from "minimist";
 import os from "os";
+import ProductoDAOMongoDB from "../dao/MongoDbProductsDao.js";
+
+
+/*----------------------------------*/
+/*----------------------------------*/
 const numCPUs = os.cpus().length;
 
 const loggerWarn = log4js.getLogger("archivo");
@@ -10,6 +15,45 @@ const loggerError = log4js.getLogger("archivo2");
 
 const loggerTodos = log4js.getLogger("todos");
 
+/*----------------------------------*/
+/*----------------------------------*/
+
+const DAO = new ProductoDAOMongoDB();
+
+export async function obtenerProductos(req, res) {
+  if (req.isAuthenticated()) {
+    res.redirect("/");
+  } else {
+    res.render("login");
+  }  
+  try {
+        const listaProductos = await DAO.listarAll();
+        console.log('get',listaProductos)
+        return res.render('vista', {listaProductos});
+    } catch (error) {
+        throw new Error(`Error al obtener Operaciones`);
+    }
+}
+
+export async function guardarProducto(req, res) {
+    try {
+        const item = {
+            nombre: req.body.nombre,
+            descripcion: req.body.descripcion,
+            precio: req.body.precio,
+            imagen: req.body.imagen
+        }
+        console.log('guarda:', item)
+        await DAO.guardar(item);
+
+        const listaProductos = await DAO.listarAll();
+        
+        return res.render('vista', {listaProductos});
+    } catch (error) {
+        console.log(error);
+        throw new Error(`Error al guardar Producto`);
+    }
+}
 export const session = (req, res) => {
   console.log(req.session);
   res.send("anda a mirar la consola");

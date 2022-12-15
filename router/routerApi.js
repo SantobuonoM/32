@@ -14,14 +14,19 @@ import {
   datos,
   noDir,
   infor,
+  obtenerProductos,
+  guardarProducto,
 } from "../controller/controllerApi.js";
-
 
 const routerApi = Router();
 
 routerApi.get("/ses", session);
 
 routerApi.post("/login", authLog, login);
+
+routerApi.get('/productos', obtenerProductos);
+
+routerApi.post("/productos",guardarProducto);
 
 routerApi.get("/faillogin", failLogin);
 

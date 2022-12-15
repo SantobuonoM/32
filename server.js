@@ -13,31 +13,21 @@ import minimist from "minimist";
 import { Strategy as LocalStrategy } from "passport-local";
 import { User } from "./models/user.js";
 import { createHash } from "./utils/bcrypt.js";
+import bCrypt from "bcrypt";
+import logger from "./config/loggers.js";
+import { config } from "./config/config.js";
+
 dotenv.config();
 const app = express();
 const MONGO_DB_URI = process.env.MONGO_URI;
 
 app.use(compression());
 app.use(cookieParser());
-app.use(
-  session({
-    store: MongoStore.create({
-      mongoUrl: MONGO_DB_URI,
-      ttl: 600,
-    }),
-    secret: "sh",
-    resave: false,
-    saveUninitialized: false,
-    rolling: false,
-    cookie: {
-      maxAge: 600000,
-    },
-  })
-);
 
+//////
 app.engine(
   "hbs",
-  exphbs({
+  exphbs.engine({
     extname: ".hbs",
     defaultLayout: "index.hbs",
   })
@@ -47,7 +37,14 @@ app.set("views", "./views");
 
 //app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
-
+app.use(
+  session({
+    secret: "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: true },
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -148,49 +145,14 @@ const argv = minimist(process.argv.slice(2), {
   alias: { p: "port", c: "cluster" },
 });
 
-const PORT = argv.p || process.env.PORT;
-const CLUSTER = argv.c;
-
 //    ----------------------cluster------------------
 
-if (CLUSTER) {
-  if (cluster.isPrimary) {
-    for (let i = 0; i < CPU_CORES; i++) {
-      cluster.fork();
-    }
-    cluster.on("exit", (worker) => {
-      console.log(`Finalizó el worker: ${process.pid}`);
-      cluster.fork();
-    });
-  } else {
-    const srv = app.listen(PORT, async () => {
-      console.log(
-        `Servidor http escuchando en el puerto ${srv.address().port}`
-      );
-      try {
-        const mongo = await mongoose.connect(MONGO_DB_URI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        });
-        console.log("Connected DB");
-      } catch (error) {
-        console.log(`Error en conexión de Base de datos: ${error}`);
-      }
-    });
-    srv.on("error", (error) => console.log(`Error en servidor ${error}`));
-  }
-} else {
-  const srv = app.listen(PORT, async () => {
-    console.log(`Servidor http escuchando en el puerto ${srv.address().port}`);
-    try {
-      const mongo = await mongoose.connect(MONGO_DB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log("Connected DB");
-    } catch (error) {
-      console.log(`Error en conexión de Base de datos: ${error}`);
-    }
-  });
-  srv.on("error", (error) => console.log(`Error en servidor ${error}`));
-}
+/*============================[Servidor]============================*/
+const PORT = config.server.PORT;
+const server = app.listen(PORT, () => {
+  logger.info(`Servidor [${config.server.NODE_ENV}] en puerto ${PORT}`);
+  // console.log(`Servidor [${config.server.NODE_ENV}] en puerto ${PORT}`);
+});
+server.on("error", (error) => {
+  logger.error(`Error en el servidor ${error}`);
+});
