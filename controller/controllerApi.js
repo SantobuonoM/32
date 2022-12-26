@@ -4,7 +4,6 @@ import minimist from "minimist";
 import os from "os";
 import ProductoDAOMongoDB from "../dao/MongoDbProductsDao.js";
 
-
 /*----------------------------------*/
 /*----------------------------------*/
 const numCPUs = os.cpus().length;
@@ -19,40 +18,53 @@ const loggerTodos = log4js.getLogger("todos");
 /*----------------------------------*/
 
 const DAO = new ProductoDAOMongoDB();
-
-export async function obtenerProductos(req, res) {
-  if (req.isAuthenticated()) {
-    res.redirect("/");
-  } else {
-    res.render("login");
-  }  
+export async function deleteProduct(req, res) {
+  const { id } = req.params;
   try {
-        const listaProductos = await DAO.listarAll();
-        console.log('get',listaProductos)
-        return res.render('vista', {listaProductos});
-    } catch (error) {
-        throw new Error(`Error al obtener Operaciones`);
-    }
+    await DAO.borrar(id);
+    return res.json({ status: 200, msg: "Producto eliminado" });
+  } catch (e) {
+    logger.warn(e.message);
+    return res.json({ status: 500, msg: e.message });
+  }
+}
+export async function updateProduct(req, res) {
+  const { id } = req.params;
+  const { name, description, code, image, price, stock } = req.body;
+  try {
+    const productUpdated = { name, description, code, image, price, stock };
+    await DAO.actualizar(id, productUpdated);
+    return res.json({ status: 200, msg: "Producto actualizado" });
+  } catch (e) {
+    logger.warn(e.message);
+    return res.json({ status: 500, msg: e.message });
+  }
+}
+export async function obtenerProductos(req, res) {
+  try {
+    const listaProductos = await DAO.listarAll();
+    console.log("get", listaProductos);
+    return res.render("vista", { listaProductos });
+  } catch (error) {
+    throw new Error(`Error al obtener Operaciones`);
+  }
 }
 
 export async function guardarProducto(req, res) {
-    try {
-        const item = {
-            nombre: req.body.nombre,
-            descripcion: req.body.descripcion,
-            precio: req.body.precio,
-            imagen: req.body.imagen
-        }
-        console.log('guarda:', item)
-        await DAO.guardar(item);
+  try {
+    
+    console.log(req.body)
+    const { nombre, descripcion, precio, imagen } = req.body;
+    const item = { nombre, descripcion, precio, imagen };
+    await DAO.guardar(item);
 
-        const listaProductos = await DAO.listarAll();
-        
-        return res.render('vista', {listaProductos});
-    } catch (error) {
-        console.log(error);
-        throw new Error(`Error al guardar Producto`);
-    }
+    const listaProductos = await DAO.listarAll();
+
+    return res.render("vista", { listaProductos });
+  } catch (error) {
+    console.log(error);
+    return res.send(error.message);
+  }
 }
 export const session = (req, res) => {
   console.log(req.session);

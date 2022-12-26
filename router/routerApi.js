@@ -16,17 +16,22 @@ import {
   infor,
   obtenerProductos,
   guardarProducto,
+  deleteProduct,
+  updateProduct
 } from "../controller/controllerApi.js";
 
 const routerApi = Router();
 
 routerApi.get("/ses", session);
 
+routerApi.delete("/productos/:id", deleteProduct);
+
 routerApi.post("/login", authLog, login);
 
-routerApi.get('/productos', obtenerProductos);
+routerApi.get("/productos", obtenerProductos);
+routerApi.put("/:id", updateProduct);
 
-routerApi.post("/productos",guardarProducto);
+routerApi.post("/productos", guardarProducto);
 
 routerApi.get("/faillogin", failLogin);
 
