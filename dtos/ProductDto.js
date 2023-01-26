@@ -1,4 +1,4 @@
-/*export default class ProductDto {
+export default class ProductDto {
     constructor({ title, price, thumbnail }) {
         this.title = title
         this.price = price
@@ -12,4 +12,3 @@ export function asDto(prod) {
     else
         return new ProductDto(prod)
 }
-*/

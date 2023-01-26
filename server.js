@@ -1,13 +1,11 @@
-import express, { Router } from "express";
-import cluster from "cluster";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import MongoStore from "connect-mongo";
 import exphbs from "express-handlebars";
-import mongoose from "mongoose";
-import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+import * as dotenv from "dotenv";
 import compression from "compression";
 import routerApi from "./router/routerApi.js";
+import carritoRoutes from "./router/router.carrito.js";
+
 import passport from "passport";
 import minimist from "minimist";
 import { Strategy as LocalStrategy } from "passport-local";
@@ -16,6 +14,7 @@ import { createHash } from "./utils/bcrypt.js";
 import bCrypt from "bcrypt";
 import logger from "./config/loggers.js";
 import { config } from "./config/config.js";
+import express from "express";
 
 dotenv.config();
 const app = express();
@@ -24,7 +23,6 @@ const MONGO_DB_URI = process.env.MONGO_URI;
 app.use(compression());
 app.use(cookieParser());
 
-//////
 app.engine(
   "hbs",
   exphbs.engine({
@@ -35,7 +33,6 @@ app.engine(
 app.set("view engine", "hbs");
 app.set("views", "./views");
 
-//app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
@@ -45,6 +42,8 @@ app.use(
     cookie: { secure: true },
   })
 );
+/*===========================[Passport]============================*/
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -120,38 +119,18 @@ passport.deserializeUser((id, done) => {
     done(err, user);
   });
 });
-/* ---------------------- Rutas ----------------------*/
+/*===========================[Rutas]============================*/
 app.use("/", routerApi);
-
-// -------------- MODO FORK -------------------
-//pm2 start server.js --name="ServerX" --watch -- PORT
-//pm2 start server.js --name="Server1" --watch -- --port 8082
-//pm2 start server.js --name="Server2" --watch -- --port 8083
-//pm2 start server.js --name="Server3" --watch -- --port 8084
-//pm2 start server.js --name="Server4" --watch -- --port 8085
-
-// Tuve un problema que no pude resolver que cuando levanto con fork o cluster los servidores quedan en errored, y no pude encontrar solucion para ese error
-
-// -------------- MODO CLUSTER -------------------
-//pm2 start server.js --name="ServerX" --watch -i max -- PORT
-//pm2 start server.js --name="Server1" --watch -i max -- --port 8080
-
-//pm2 list
-//pm2 delete id
-
-//----------------------------------------------------------------
+app.use("/carrito", carritoRoutes);
 
 const argv = minimist(process.argv.slice(2), {
   alias: { p: "port", c: "cluster" },
 });
 
-//    ----------------------cluster------------------
-
-/*============================[Servidor]============================*/
+/*===========================[Servidor]============================*/
 const PORT = config.server.PORT;
 const server = app.listen(PORT, () => {
   logger.info(`Servidor [${config.server.NODE_ENV}] en puerto ${PORT}`);
-  // console.log(`Servidor [${config.server.NODE_ENV}] en puerto ${PORT}`);
 });
 server.on("error", (error) => {
   logger.error(`Error en el servidor ${error}`);

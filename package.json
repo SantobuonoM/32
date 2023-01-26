@@ -22,7 +22,7 @@
     "log4js": "^6.7.0",
     "minimist": "^1.2.7",
     "mocha": "^10.2.0",
-    "mongoose": "^6.8.0",
+    "mongoose": "^6.8.1",
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
@@ -34,8 +34,8 @@
     "test": "node autocanon.js",
     "mocha": "mocha test/mocha/mocha.js",
     "chai": "mocha test/mocha/chai.js",
-
-    "dev": "nodemon server.js -p 5000"
+    "dev": "nodemon server.js -p 8081",
+    "start": "node server.js "
   },
   "repository": {
     "type": "git"

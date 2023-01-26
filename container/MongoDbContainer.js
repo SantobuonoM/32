@@ -4,14 +4,14 @@ import logger from "../config/loggers.js";
 import { asPOJO, renameField, removeField } from "../utils/objectUtils.js";
 import mongoose from "mongoose";
 import { config } from "../config/config.js";
-
+import { asDto } from "../dtos/ProductDto.js";
 mongoose.set("strictQuery", true);
-mongoose.connect(config.mongodb.host, config.mongodb.options);
+//mongoose.connect(config.mongodb.host, config.mongodb.options);
 
 class ContenedorMongoDB {
   constructor(modelo) {
     this.coleccion = modelo;
-    this.conn = new MongoDBClient();
+    this.conn =  MongoDBClient.getInstance();
   }
 
   async listar(id) {
@@ -23,7 +23,7 @@ class ContenedorMongoDB {
         throw new CustomError(500, "listar by id", "empty result.");
       } else {
         const result = renameField(asPOJO(docs[0]), "_id", "id");
-        return result;
+        return asDto(result);
       }
     } catch (error) {
       const cuserr = new CustomError(500, "Error al listarbyId()", error);
@@ -43,7 +43,7 @@ class ContenedorMongoDB {
     } catch (error) {
       const cuserr = new CustomError(500, "Error al listarAll()", error);
       logger.error(cuserr);
-      throw cuserr;
+      throw asDto(cuserr);
     }
   }
 
@@ -53,7 +53,7 @@ class ContenedorMongoDB {
       doc = asPOJO(doc);
       renameField(doc, "_id", "id");
       removeField(doc, "__v");
-      return doc;
+      return asDto(doc);
     } catch (error) {
       throw new CustomError(500, "Error al guardar", error);
     }
@@ -71,7 +71,8 @@ class ContenedorMongoDB {
       } else {
         renameField(nuevoElem, "_id", "id");
         removeField(nuevoElem, "__v");
-        return asPOJO(nuevoElem);
+        let pojo= asPOJO(nuevoElem);
+        return asDto(pojo)
       }
     } catch (error) {
       throw new CustomError(500, "Error al actualizar:", error);
@@ -94,6 +95,7 @@ class ContenedorMongoDB {
       throw new CustomError(500, "Error al borrar todo", error);
     }
   }
+  
 }
 
 export default ContenedorMongoDB;

@@ -5,7 +5,6 @@ import os from "os";
 import ProductoDAOMongoDB from "../dao/MongoDbProductsDao.js";
 
 /*----------------------------------*/
-/*----------------------------------*/
 const numCPUs = os.cpus().length;
 
 const loggerWarn = log4js.getLogger("archivo");
@@ -13,11 +12,10 @@ const loggerWarn = log4js.getLogger("archivo");
 const loggerError = log4js.getLogger("archivo2");
 
 const loggerTodos = log4js.getLogger("todos");
-
-/*----------------------------------*/
 /*----------------------------------*/
 
 const DAO = new ProductoDAOMongoDB();
+
 export async function deleteProduct(req, res) {
   const { id } = req.params;
   try {
@@ -52,8 +50,7 @@ export async function obtenerProductos(req, res) {
 
 export async function guardarProducto(req, res) {
   try {
-    
-    console.log(req.body)
+    console.log(req.body);
     const { nombre, descripcion, precio, imagen } = req.body;
     const item = { nombre, descripcion, precio, imagen };
     await DAO.guardar(item);
